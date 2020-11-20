@@ -64,20 +64,23 @@ class Modbus:
         readings = collections.OrderedDict()
 
         async with self.modbus_lock:
-            result = await self.modbus_client.read_holding_registers(6, 8, unit=0x01)
+            # Keep register bulk reads to a maximum of four registers
+            result = await self.modbus_client.read_holding_registers(6, 4, unit=0x01)
             readings["freshAirTemperature"] = parse_temperature(result.registers[0])
             readings["supplyAirTemperatureAfterHeatRecovery"] = parse_temperature(result.registers[1])
             readings["supplyAirTemperature"] = parse_temperature(result.registers[2])
             readings["wasteAirTemperature"] = parse_temperature(result.registers[3])
-            readings["exhaustAirTemperature"] = parse_temperature(result.registers[4])
-            readings["exhaustAirTemperatureBeforeHeatRecovery"] = parse_temperature(result.registers[5])
-            readings["exhaustAirHumidity"] = result.registers[7]
-            result = await self.modbus_client.read_holding_registers(29, 7, unit=0x01)
+            result = await self.modbus_client.read_holding_registers(10, 4, unit=0x01)
+            readings["exhaustAirTemperature"] = parse_temperature(result.registers[0])
+            readings["exhaustAirTemperatureBeforeHeatRecovery"] = parse_temperature(result.registers[1])
+            readings["exhaustAirHumidity"] = result.registers[3]
+            result = await self.modbus_client.read_holding_registers(29, 4, unit=0x01)
             readings["heatRecoverySupplySide"] = result.registers[0]
             readings["heatRecoveryExhaustSide"] = result.registers[1]
             readings["heatRecoveryTemperatureDifferenceSupplySide"] = parse_temperature(result.registers[2])
             readings["heatRecoveryTemperatureDifferenceExhaustSide"] = parse_temperature(result.registers[3])
-            readings["mean48HourExhaustHumidity"] = result.registers[6]
+            result = await self.modbus_client.read_holding_registers(35, 1, unit=0x01)
+            readings["mean48HourExhaustHumidity"] = result.registers[0]
             result = await self.modbus_client.read_holding_registers(47, 3, unit=0x01)
             readings["cascadeSp"] = result.registers[0]
             readings["cascadeP"] = result.registers[1]
